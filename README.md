@@ -14,7 +14,7 @@
 - ctrl-b: previous canvas
 - ctrl-w: bigger font size
 - ctrl-s: smaller font size
-- alt-s: draw sqare
+- alt-s: draw square
 - alt-c: draw circle
 - alt-r: change drawing color to red
 - alt-g: change drawing color to green
