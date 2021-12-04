@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+import sys
+import pygame
+
+shifted_JIS = {}
+shifted_JIS['a'] = 'A'
+shifted_JIS['b'] = 'B'
+shifted_JIS['c'] = 'C'
+shifted_JIS['d'] = 'D'
+shifted_JIS['e'] = 'E'
+shifted_JIS['f'] = 'F'
+shifted_JIS['g'] = 'G'
+shifted_JIS['h'] = 'H'
+shifted_JIS['i'] = 'I'
+shifted_JIS['j'] = 'J'
+shifted_JIS['k'] = 'K'
+shifted_JIS['l'] = 'L'
+shifted_JIS['m'] = 'M'
+shifted_JIS['n'] = 'N'
+shifted_JIS['o'] = 'O'
+shifted_JIS['p'] = 'P'
+shifted_JIS['q'] = 'Q'
+shifted_JIS['r'] = 'R'
+shifted_JIS['s'] = 'S'
+shifted_JIS['t'] = 'T'
+shifted_JIS['u'] = 'U'
+shifted_JIS['v'] = 'V'
+shifted_JIS['w'] = 'W'
+shifted_JIS['x'] = 'X'
+shifted_JIS['y'] = 'Y'
+shifted_JIS['z'] = 'Z'
+shifted_JIS['0'] = ''
+shifted_JIS['1'] = '!'
+shifted_JIS['2'] = '"'
+shifted_JIS['3'] = '#'
+shifted_JIS['4'] = '$'
+shifted_JIS['5'] = '%'
+shifted_JIS['6'] = '&'
+shifted_JIS['7'] = '\''
+shifted_JIS['8'] = '('
+shifted_JIS['9'] = ')'
+shifted_JIS['-'] = '='
+shifted_JIS['^'] = '~'
+shifted_JIS['¥'] = '|'
+shifted_JIS['\\'] = '|'
+shifted_JIS['@'] = '`'
+shifted_JIS['['] = '{'
+shifted_JIS[']'] = '}'
+shifted_JIS[';'] = '+'
+shifted_JIS[':'] = '*'
+shifted_JIS[','] = '<'
+shifted_JIS['.'] = '>'
+shifted_JIS['/'] = '?'
+shifted_JIS['_'] = '_'
+shifted_JIS['_'] = '_'
+
+def get_shifted_JIS(key):
+	if key >= 0x7f or key < 0x20:
+		return ''
+	if chr(key) in shifted_JIS:
+		return shifted_JIS[chr(key)]
+	else:
+		return ''
+
+class canvas:
+	def __init__(self, bytes_data, size):
+		self.data = [(bytes_data, '', (0,0), size)]
+
+	def back(self):
+		return self.data[-1]
+
+	def pop_back(self):
+		if len(self.data) <= 1:
+			return None
+		self.data.pop()
+
+	def push_back(self, bytes_data, str, lastpos, size):
+		self.data.append((bytes_data, str, lastpos, size))
+
+class oekaki:
+	size = (1280, 720)
+	black = (0,0,0)
+	white = (255,255,255)
+	red = (255,0,0)
+	blue = (0,0,255)
+	green = (0,255,0)
+	yellow = (255,255,0)
+	background = black
+	linecolor = white
+	linethickness = 1
+	canv = []
+
+	def __init__(self):
+		pygame.init()
+		self.screen = pygame.display.set_mode(self.size, pygame.RESIZABLE)
+		self.screen.fill(self.background)
+		self.prev_pos = pygame.mouse.get_pos()
+		pygame.display.flip()
+		self.canv.append(canvas(pygame.image.tostring(self.screen, 'RGB'), self.size))
+		self.current_canv = 0
+		self.fontsize = 50
+		self.font = pygame.font.SysFont("Roboto", self.fontsize)
+
+	def new_canvas(self):
+		self.screen.fill(self.background)
+		self.canv.append(canvas(pygame.image.tostring(self.screen, 'RGB'), self.size))
+		self.current_canv = len(self.canv)-1
+
+	def next_canvas(self):
+		self.current_canv += 1
+		if self.current_canv >= len(self.canv):
+			self.current_canv = 0
+		tmp = pygame.image.frombuffer(self.canv[self.current_canv].back()[0], self.canv[self.current_canv].back()[3], 'RGB')
+		self.screen.blit(tmp, (0,0))
+
+	def prev_canvas(self):
+		self.current_canv -= 1
+		if self.current_canv < 0:
+			self.current_canv = len(self.canv)-1
+		tmp = pygame.image.frombuffer(self.canv[self.current_canv].back()[0], self.canv[self.current_canv].back()[3], 'RGB')
+		self.screen.blit(tmp, (0,0))
+
+	def undo(self):
+		ret = self.canv[self.current_canv].back()[1]
+		self.canv[self.current_canv].pop_back()
+		tmp = pygame.image.frombuffer(self.canv[self.current_canv].back()[0], self.canv[self.current_canv].back()[3], 'RGB')
+		self.screen.blit(tmp, (0,0))
+		# pygame.display.flip()
+		return ret
+
+	def text(self, mousepos, key):
+		if key == pygame.K_BACKSPACE:
+			self.undo()
+			return
+		if self.canv[self.current_canv].back()[2] != mousepos:
+			text = ''
+		else:
+			text = self.canv[self.current_canv].back()[1]
+		mods = pygame.key.get_mods()
+		add = ''
+		if mods & pygame.KMOD_LSHIFT:
+			add = get_shifted_JIS(key)
+		elif mods == 0:
+			add = chr(key)
+			if add == '¥':
+				add = '\\'
+		if add == '':
+			return
+		self.font = pygame.font.SysFont("Roboto", self.fontsize)
+		if text == '':
+			text+=add
+			self.screen.blit(self.font.render(text, True, self.linecolor), mousepos)
+		else:
+			text+=add
+			self.screen.blit(self.font.render(text, True, self.linecolor), mousepos)
+		self.canv[self.current_canv].push_back(pygame.image.tostring(self.screen, 'RGB'), text, mousepos, self.size)
+
+	def line(self):
+		self.prev_pos = pygame.mouse.get_pos()
+		flag = False
+		while pygame.mouse.get_pressed()[0]:
+			pygame.draw.aaline(self.screen, self.linecolor, self.prev_pos, pygame.mouse.get_pos())
+			pygame.display.flip()
+			self.prev_pos = pygame.mouse.get_pos()
+			pygame.event.get()
+			flag = True
+		if flag:
+			self.canv[self.current_canv].push_back(pygame.image.tostring(self.screen, 'RGB'), '', pygame.mouse.get_pos(), self.size)
+
+	def square(self, mousepos):
+		size = 50
+		pygame.draw.rect(self.screen, self.linecolor, pygame.Rect(mousepos[0]-(size/2), mousepos[1]-(size/2), size, size), self.linethickness)
+		self.canv[self.current_canv].push_back(pygame.image.tostring(self.screen, 'RGB'), '', mousepos, self.size)
+
+	def circle(self, mousepos):
+		size = 50
+		pygame.draw.circle(self.screen, self.linecolor, mousepos, size/2, self.linethickness)
+		self.canv[self.current_canv].push_back(pygame.image.tostring(self.screen, 'RGB'), '', mousepos, self.size)
+
+	def draw(self):
+		info = pygame.display.Info()
+		self.size = (info.current_w, info.current_h)
+		for event in pygame.event.get():
+			pos = pygame.mouse.get_pos()
+			if event.type == pygame.QUIT:
+				return False
+			if event.type == pygame.KEYDOWN:
+				keys = pygame.key.get_pressed()
+				self.text(pos, event.key)
+				mods = pygame.key.get_mods()
+				if mods & pygame.KMOD_CTRL:
+					if event.key == ord('q'): # quit
+						return False
+					elif event.key == ord('z'): # undo
+						self.undo()
+					elif event.key == ord('n'): # new canvas
+						self.new_canvas()
+					elif event.key == ord('f'): # next canvas
+						self.next_canvas()
+					elif event.key == ord('b'): # previous canvas
+						self.prev_canvas()
+					elif event.key == ord('w'): # set bigger font size
+						self.fontsize += 10
+					elif event.key == ord('s'): # set smaller font size
+						self.fontsize -= 10
+						if self.fontsize < 10:
+							self.fontsize += 10
+				elif mods & pygame.KMOD_ALT:
+					if event.key == ord('s'): # square
+						self.square(pos)
+					elif event.key == ord('c'): # circle
+						self.circle(pos)
+					elif event.key == ord('r'): # red
+						self.linecolor = self.red
+					elif event.key == ord('g'): # green
+						self.linecolor = self.green
+					elif event.key == ord('b'): # blue
+						self.linecolor = self.blue
+					elif event.key == ord('w'): # white
+						self.linecolor = self.white
+					elif event.key == ord('y'): # yellow
+						self.linecolor = self.yellow
+		self.line()
+		pygame.display.flip()
+		return True
+
+def main():
+	hoge = oekaki()
+	while hoge.draw():
+		pass
+
+if __name__ == '__main__':
+	main()
