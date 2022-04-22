@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import pygame
+import time
 
 shifted_JIS = {}
 shifted_JIS['a'] = 'A'
@@ -85,8 +86,8 @@ class oekaki:
 	blue = (0,0,255)
 	green = (0,255,0)
 	yellow = (255,255,0)
-	background = black
-	linecolor = white
+	background = white
+	linecolor = black
 	linethickness = 1
 	canv = []
 
@@ -180,46 +181,46 @@ class oekaki:
 	def draw(self):
 		info = pygame.display.Info()
 		self.size = (info.current_w, info.current_h)
-		for event in pygame.event.get():
-			pos = pygame.mouse.get_pos()
-			if event.type == pygame.QUIT:
-				return False
-			if event.type == pygame.KEYDOWN:
-				keys = pygame.key.get_pressed()
-				self.text(pos, event.key)
-				mods = pygame.key.get_mods()
-				if mods & pygame.KMOD_CTRL:
-					if event.key == ord('q'): # quit
-						return False
-					elif event.key == ord('z'): # undo
-						self.undo()
-					elif event.key == ord('n'): # new canvas
-						self.new_canvas()
-					elif event.key == ord('f'): # next canvas
-						self.next_canvas()
-					elif event.key == ord('b'): # previous canvas
-						self.prev_canvas()
-					elif event.key == ord('w'): # set bigger font size
+		event = pygame.event.wait()
+		pos = pygame.mouse.get_pos()
+		if event.type == pygame.QUIT:
+			return False
+		if event.type == pygame.KEYDOWN:
+			keys = pygame.key.get_pressed()
+			self.text(pos, event.key)
+			mods = pygame.key.get_mods()
+			if mods & pygame.KMOD_CTRL:
+				if event.key == ord('q'): # quit
+					return False
+				elif event.key == ord('z'): # undo
+					self.undo()
+				elif event.key == ord('n'): # new canvas
+					self.new_canvas()
+				elif event.key == ord('f'): # next canvas
+					self.next_canvas()
+				elif event.key == ord('b'): # previous canvas
+					self.prev_canvas()
+				elif event.key == ord('w'): # set bigger font size
+					self.fontsize += 10
+				elif event.key == ord('s'): # set smaller font size
+					self.fontsize -= 10
+					if self.fontsize < 10:
 						self.fontsize += 10
-					elif event.key == ord('s'): # set smaller font size
-						self.fontsize -= 10
-						if self.fontsize < 10:
-							self.fontsize += 10
-				elif mods & pygame.KMOD_ALT:
-					if event.key == ord('s'): # square
-						self.square(pos)
-					elif event.key == ord('c'): # circle
-						self.circle(pos)
-					elif event.key == ord('r'): # red
-						self.linecolor = self.red
-					elif event.key == ord('g'): # green
-						self.linecolor = self.green
-					elif event.key == ord('b'): # blue
-						self.linecolor = self.blue
-					elif event.key == ord('w'): # white
-						self.linecolor = self.white
-					elif event.key == ord('y'): # yellow
-						self.linecolor = self.yellow
+			elif mods & pygame.KMOD_ALT:
+				if event.key == ord('s'): # square
+					self.square(pos)
+				elif event.key == ord('c'): # circle
+					self.circle(pos)
+				elif event.key == ord('r'): # red
+					self.linecolor = self.red
+				elif event.key == ord('g'): # green
+					self.linecolor = self.green
+				elif event.key == ord('b'): # blue
+					self.linecolor = self.blue
+				elif event.key == ord('w'): # white
+					self.linecolor = self.white
+				elif event.key == ord('y'): # yellow
+					self.linecolor = self.yellow
 		self.line()
 		pygame.display.flip()
 		return True
@@ -227,7 +228,7 @@ class oekaki:
 def main():
 	hoge = oekaki()
 	while hoge.draw():
-		pass
+                time.sleep(0.016)
 
 if __name__ == '__main__':
 	main()
